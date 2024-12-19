@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "991595271427",
+    "firebase_url": "https://eventapp773-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "eventapp773",
+    "storage_bucket": "eventapp773.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:991595271427:android:1c5f8dc2a1360865638536",
+        "android_client_info": {
+          "package_name": "com.example.eventapp773"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpgDeWtdn4U4L0izfsiujx0wLVZlmFjDw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
