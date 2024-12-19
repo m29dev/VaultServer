@@ -89,15 +89,27 @@ exports.postCurrencyExchange = async (req, res) => {
         userId
     )
 
+    let currentCurrencyInfo = {}
+    let newCurrencyInfo = {}
+
     try {
         let currentCurrencyRate
         if (currentCurrency === 'PLN') {
             currentCurrencyRate = 1
+            currentCurrencyInfo = {
+                currency: 'złoty',
+                code: 'PLN',
+            }
         } else {
             const url0 = `https://api.nbp.pl/api/exchangerates/rates/a/${currentCurrency}/`
             const response0 = await axios.get(url0)
             const currentCurrencyData = response0?.data
+            currentCurrencyInfo = {
+                currency: currentCurrencyData?.currency,
+                code: currentCurrencyData?.code,
+            }
             currentCurrencyRate = currentCurrencyData?.rates?.[0]?.mid
+
             console.log(currentCurrencyRate)
         }
 
@@ -108,7 +120,12 @@ exports.postCurrencyExchange = async (req, res) => {
             const url1 = `https://api.nbp.pl/api/exchangerates/rates/a/${newCurrency}/`
             const response1 = await axios.get(url1)
             const newCurrencyData = response1?.data
+            newCurrencyInfo = {
+                currency: newCurrencyData?.currency,
+                code: newCurrencyData?.code,
+            }
             newCurrencyRate = newCurrencyData?.rates?.[0]?.mid
+
             console.log(newCurrencyRate)
         }
 
@@ -116,36 +133,87 @@ exports.postCurrencyExchange = async (req, res) => {
         console.log(amount, currentCurrency, ' => ', exchange, newCurrency)
         const rounded = Math.round(exchange * 100) / 100
 
-        const currentCurrencyObject = {
-            currency: currentCurrency,
-            amount: amount,
-        }
-
-        const newCurrencyObject = {
-            currency: newCurrency,
-            amount: rounded,
-        }
+        currentCurrencyInfo.amount = amount
+        newCurrencyInfo.amount = rounded
 
         const createTransaction = async () => {
             try {
                 const item = new Transaction({
                     userId,
-                    currentCurrency: currentCurrencyObject,
-                    newCurrency: newCurrencyObject,
+                    currentCurrency: currentCurrencyInfo,
+                    newCurrency: newCurrencyInfo,
                     date: Date(),
                 })
                 const result = await item.save()
                 console.log('Transaction created:', result)
-
-                res.json(result)
+                if (!result)
+                    return res
+                        .status(400)
+                        .json({ error: 'postCurrencyExchange' })
             } catch (error) {
                 console.error('Error creating user:', error)
 
                 res.status(400).json({ error: 'postCurrencyExchange' })
             }
         }
-
         createTransaction()
+
+        const updateWallet = async () => {
+            try {
+                const user = await User.findById(userId)
+
+                // current currency
+                user.wallet.forEach((item) => {
+                    if (item.code === currentCurrencyInfo.code) {
+                        return (item.amount =
+                            +item.amount - +currentCurrencyInfo.amount)
+                    }
+                })
+
+                // new currency
+                let isCurrency = false
+                user.wallet.forEach((item) => {
+                    if (item.code === newCurrencyInfo.code) {
+                        item.amount = +item.amount + +newCurrencyInfo.amount
+                        isCurrency = true
+                        return
+                    }
+                })
+
+                // if new !currency create it
+                if (!isCurrency) {
+                    user.wallet.push({
+                        currency: newCurrencyInfo?.currency,
+                        code: newCurrencyInfo?.code,
+                        amount: newCurrencyInfo?.amount,
+                    })
+                }
+
+                const newWallet = user.wallet
+
+                const updatedUser = await User.findByIdAndUpdate(
+                    userId, // The ID of the document to update
+                    {
+                        wallet: newWallet,
+                    }, // The new value for the 'amount' field
+                    { new: true } // Option to return the updated document instead of the original
+                )
+
+                console.log('UPDATED: ', updatedUser)
+
+                if (!updatedUser)
+                    return res
+                        .status(400)
+                        .json({ error: 'postCurrencyExchange' })
+            } catch (error) {
+                console.error('Error creating user:', error)
+
+                res.status(400).json({ error: 'postCurrencyExchange' })
+            }
+        }
+        updateWallet()
+
+        res.json(newCurrencyInfo)
     } catch (error) {
         console.log(error)
         res.status(400).json({ error: error.message })
