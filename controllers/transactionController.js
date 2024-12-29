@@ -229,7 +229,9 @@ exports.getTransactions = async (req, res) => {
             userId
         )
 
-        const transactions = await Transaction.find({ userId })
+        const transactions = await Transaction.find({ userId }).sort({
+            date: -1,
+        })
         console.log(transactions)
         res.json(transactions)
     } catch (err) {
