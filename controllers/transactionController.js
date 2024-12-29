@@ -14,6 +14,24 @@ exports.getCurrency = async (req, res) => {
     }
 }
 
+exports.getCurrencyDate = async (req, res) => {
+    try {
+        const { date } = req.params
+        console.log(date)
+
+        // get all currencies
+        const url = `https://api.nbp.pl/api/exchangerates/tables/c/${date}`
+        const response = await axios.get(url)
+        console.log(response)
+
+        const data = response?.data
+
+        res.json(data)
+    } catch (error) {
+        res.status(400).json({ error: error.message })
+    }
+}
+
 exports.postTransactionsAdd = async (req, res) => {
     // CHANGE LATER FOR VALUES IN URL /CURRENCY/NEW/AMOUNT
 
